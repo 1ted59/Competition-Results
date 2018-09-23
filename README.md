@@ -8,26 +8,19 @@ If there are no disqualified runs, the results file should end with two empty li
 
 Example results format with DQ's:
 
+```
 1. winner
-
 second place
-
 3rd place
-
 (empty line)
-
 DQ 1
-
 #2 DQ
-
+```
 Example results format without DQ's:
-
+```
 1. winner
-
 second place
-
 #3 player
-
 (empty line)
-
 (empty line)
+```
