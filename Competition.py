@@ -1,12 +1,30 @@
 #colorama allows usage of escape chars on any platform
 #install it with "pip install colorama"
-import colorama
-from colorama import init,Fore,Back,deinit
-init()
+
+COLORAMA = False
+try:
+	import colorama
+	from colorama import init,Fore,Back,deinit
+	init()
+	COLORAMA = True
+except ImportError:
+	print("Working without colorama, no colors available")
+
+#key representations
+UP_ARROW = b'H'
+DOWN_ARROW = b'P'
+ENTER = b'\r' 
+SPACE = b' '
+SPECIAL_CHAR = b'\xe0'
+
+
 
 #escape codes for custom behavior in terminal
 CLEAR = '\033[2J'
 RESETTEXT = '\033[0m'
+if not COLORAMA:
+	RESETTEXT = ''
+	CLEAR = '\n\n\n\n\n'
 
 #file locations, change them here if you want
 RESULTSFILE = "results.txt"
@@ -48,7 +66,7 @@ def main():
 	
 	i=0
 	for line in compInfo:
-		if i >= dqMarker:
+		if i >= dqMarker and COLORAMA:
 			print(Back.RED, end="")
 		if line.strip() == "":
 			print("(empty line)", end="")
@@ -89,12 +107,15 @@ def startComp(compInfo, dqMarker):
 			compLine = compLine.replace('“','"').replace('”','"').replace("’","'").strip()
 			
 			#if the line is a DQ display it with a red background
-			if i >= dqMarker:
+			if i >= dqMarker and COLORAMA:
 				print(Back.RED,end="")
 				
 			# if the current placing is up, display it on a white background with black text
 			if i == currentSpot:
-				print(Back.WHITE + Fore.BLACK + ">",end="")
+				if COLORAMA:
+					print(Back.WHITE + Fore.BLACK + ">", end="")
+				else:
+					print("\n>>>>",end="")
 				compOutput = compLine
 				
 				#if it is over the length, cut off some data at the end
@@ -105,7 +126,6 @@ def startComp(compInfo, dqMarker):
 					
 				#write output to the line file
 				writeTextToResults(compOutput)
-				
 			if compLine.strip() == "":
 				print("(Empty line)",end="")
 			#print line and reset text styles
@@ -113,9 +133,20 @@ def startComp(compInfo, dqMarker):
 			i += 1
 			
 		#wait until the user presses enter to continue
-		input()
-		currentSpot += 1
-		
+		c = b' '	
+		while c!= ENTER and c!=UP_ARROW and c!=DOWN_ARROW:
+			c = getch()
+			if (c == ENTER):
+				currentSpot += 1
+				getch()
+			elif (c == SPECIAL_CHAR):
+				c = getch()
+				if (c == UP_ARROW and currentSpot != 0):
+					currentSpot -= 1
+				elif (c == DOWN_ARROW):
+					currentSpot += 1
+			elif (c == b'\x03'):
+				raise KeyboardInterrupt()
 
 def writeTextToResults(text):
 	"""sets the resultsline file to the inputted text"""
@@ -148,7 +179,30 @@ def reverseArray(data, dqMarker):
 	
 	return data
 	
+def _find_getch():
+    try:
+        import termios
+    except ImportError:
+        # Non-POSIX. Return msvcrt's (Windows') getch.
+        import msvcrt
+        return msvcrt.getch
+
+    # POSIX system. Create and return a getch that manipulates the tty.
+    import sys, tty
+    def _getch():
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+    return _getch
+
+getch = _find_getch()
 main()
 
-#turn off colorama as the script is done
-deinit()
+if COLORAMA:
+	deinit()
