@@ -189,7 +189,6 @@ def waitForInput():
         while True:
             c = getch()
             if (c == WIN_ENTER):
-                getch()
                 return 1
             elif (c == WIN_SPECIAL_CHAR):
                 c = getch()
